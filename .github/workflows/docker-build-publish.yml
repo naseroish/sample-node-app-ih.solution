@@ -46,6 +46,6 @@ jobs:
           registryUrl: docker.io
           registryUsername: ${{ secrets.DOCKERHUB_USERNAME }}
           registryPassword: ${{ secrets.DOCKERHUB_TOKEN }}
-          containerAppName: frontendapp
-          resourceGroup: container-labs-rg
+          containerAppName: naser-fe
+          resourceGroup: naser
           imageToBuild: saurabhd2106/frontendapp-node:${{ github.sha }}
