@@ -1,6 +1,7 @@
 name: Build, Test, and Deploy to Azure Container Apps
 
 on:
+  # Manual trigger from the Actions tab
   workflow_dispatch:
 
 permissions:
@@ -8,7 +9,8 @@ permissions:
   actions: read
   checks: write
   pull-requests: write
-  id-token: write  # keep only if you plan to use OIDC; otherwise can remove
+  # If you plan to switch to OIDC later, keep id-token: write
+  id-token: write
 
 jobs:
   build-test-and-deploy:
@@ -29,23 +31,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build the application (optional)
-        run: npm run build 2>/dev/null || echo "No build script found, skipping build step"
+      - name: Run unit tests (if present)
+        run: npm test --if-present
 
-      - name: Azure login (client secret)
+      - name: Build the application (optional)
+        run: npm run build 2>/dev/null || echo "No build step; continuing."
+
+      - name: Azure Login (Service Principal)
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Build and push container image to registry + deploy to ACA
+      - name: Build, push image to Docker Hub and deploy to ACA
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
-          # dockerfilePath: ./Dockerfile        # uncomment if your Dockerfile isn't at the root
-          # target: <your-target-stage>         # uncomment if using a multi-stage target
+          # Uncomment if your Dockerfile isn't at repo root
+          # dockerfilePath: ./Dockerfile
+          # target: <multi-stage-target-name-if-any>
+
           registryUrl: docker.io
           registryUsername: ${{ secrets.DOCKERHUB_USERNAME }}
           registryPassword: ${{ secrets.DOCKERHUB_TOKEN }}
-          containerAppName: naser-fe
+
+          # Azure targets
           resourceGroup: naser
-          imageToBuild: saurabhd2106/frontendapp-node:${{ github.sha }}
+          containerAppName: naser-fe
+
+          # Image tag = commit SHA for traceability
+          imageToBuild: ${{ secrets.DOCKERHUB_USERNAME }}/frontendapp-node:${{ github.sha }}
